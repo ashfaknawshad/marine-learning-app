@@ -3,13 +3,13 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// This is the prompt we will send to OpenAI
+// Updated prompt for the Gemini API
 const FLASHCARD_PROMPT = `
   You are an expert AI assistant for a marine science student.
-  Based on the following learning content, generate a concise set of 3 to 5 flashcards in a valid JSON array format.
-  Each object in the array must have a "question" and an "answer" field.
-  The questions should be clear and designed to test key concepts from the text.
-  The answers should be direct and informative. Do not add any extra text, just return the JSON array.
+  Based on the following learning content, generate a concise set of 3 to 5 flashcards.
+  Your response must be ONLY a valid JSON array of objects.
+  Each object must have a "question" and an "answer" field.
+  Do not include the word 'json' or any markdown backticks in your response.
 
   Here is the learning content:
 `
@@ -21,40 +21,46 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Extract the learning text from the request body
-    const { text } = await req.json()
+    const { text } = await req.json();
     if (!text) {
-      throw new Error('No text provided.')
+      throw new Error('No text provided.');
     }
+    
+    // Gemini API endpoint and key
+    const API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
 
-    // 2. Call the OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Structure the request body for the Gemini API
+    const requestBody = {
+      contents: [{
+        parts: [{
+          text: FLASHCARD_PROMPT + text
+        }]
+      }],
+      generationConfig: {
+        response_mime_type: "application/json", // Instruct Gemini to output JSON
+        temperature: 0.5,
+      }
+    };
+
+    // Make the API call to Google
+    const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-3.5-turbo', // This model is fast and perfect for this task
-        messages: [
-          { role: 'system', content: FLASHCARD_PROMPT },
-          { role: 'user', content: text },
-        ],
-        temperature: 0.5, // Controls creativity. Lower is more predictable.
-        response_format: { type: "json_object" }, // Ensures the output is valid JSON
-      }),
-    })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`OpenAI API error: ${response.statusText} - ${errorBody}`)
+      throw new Error(`Gemini API error: ${response.statusText} - ${errorBody}`);
     }
 
     const data = await response.json();
-    // The AI's response is a stringified JSON, so we parse it.
-    const flashcards = JSON.parse(data.choices[0].message.content);
 
-    // 3. Return the generated flashcards
+    // Extract and parse the response text from Gemini's structure
+    const aiResponseText = data.candidates[0].content.parts[0].text;
+    const flashcards = JSON.parse(aiResponseText);
+
     return new Response(JSON.stringify({ flashcards }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,

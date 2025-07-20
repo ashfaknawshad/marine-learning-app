@@ -3,13 +3,14 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts'
 import { corsHeaders } from '../_shared/cors.ts'
 
-// The AI prompt for generating the quiz
+// Updated prompt for the Gemini API
 const QUIZ_PROMPT = `
   You are an expert AI assistant for a marine biology student creating a "Guess the Specimen" quiz.
-  Based on the provided learning content, which includes the Department, Module, and the user's notes, your task is to:
+  Based on the provided learning content (Department, Module, and Notes), your task is to:
   1. Identify the primary specimen or subject described in the notes. This will be the correct answer.
   2. Generate three scientifically plausible but incorrect distractor options. These should be related to the correct answer (e.g., other species from the same genus, family, or geographical area).
-  3. Return a valid JSON object with two keys: "correct_answer" and "options". The "options" array must contain all four choices (the correct answer and the three distractors) in a random order.
+  3. Your response must be ONLY a valid JSON object with two keys: "correct_answer" and "options". The "options" array must contain all four choices (the correct answer and the three distractors) in a random order.
+  Do not include the word 'json' or any markdown backticks in your response.
 
   Here is the learning content:
 `
@@ -21,10 +22,9 @@ serve(async (req) => {
   }
 
   try {
-    // 1. Extract the learning log data from the request
-    const { log } = await req.json()
+    const { log } = await req.json();
     if (!log || !log.text || !log.module) {
-      throw new Error('Required log data (text, module) was not provided.')
+      throw new Error('Required log data (text, module) was not provided.');
     }
 
     // Combine the log data into a single context string for the AI
@@ -32,45 +32,52 @@ serve(async (req) => {
       Department: ${log.department.name}
       Module: ${log.module.name}
       Notes: ${log.text}
-    `
+    `;
+
+    // Gemini API endpoint and key
+    const API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
     
-    // 2. Call the OpenAI API
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o', // Using a more advanced model for better accuracy
-        messages: [
-          { role: 'system', content: QUIZ_PROMPT },
-          { role: 'user', content: context },
-        ],
+    // Structure the request body for the Gemini API
+    const requestBody = {
+      contents: [{
+        parts: [{
+          text: QUIZ_PROMPT + context
+        }]
+      }],
+      generationConfig: {
+        response_mime_type: "application/json", // Instruct Gemini to output JSON
         temperature: 0.6,
-        response_format: { type: "json_object" },
-      }),
-    })
+      }
+    };
+    
+    // Make the API call to Google
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody),
+    });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      throw new Error(`OpenAI API error: ${response.statusText} - ${errorBody}`)
+      throw new Error(`Gemini API error: ${response.statusText} - ${errorBody}`);
     }
 
-    const data = await response.json()
-    // The AI's response is a stringified JSON, so we parse it.
-    const quizData = JSON.parse(data.choices[0].message.content)
+    const data = await response.json();
+    
+    // Extract and parse the response text from Gemini's structure
+    const aiResponseText = data.candidates[0].content.parts[0].text;
+    const quizData = JSON.parse(aiResponseText);
 
-    // 3. Return the generated quiz data
     return new Response(JSON.stringify({ quiz: quizData }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    })
+    });
 
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 400,
-    })
+    });
   }
-})
+});

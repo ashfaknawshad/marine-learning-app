@@ -7,7 +7,7 @@ const Logo = () => (
       located in the public directory.
     */}
     <img
-      src="public/whale-logo.svg"
+      src="whale-logo.svg"
       alt="Marine Learning Hub Logo"
       className="w-12 h-12" // Control the size of the logo here
     />

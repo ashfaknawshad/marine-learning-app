@@ -6,14 +6,13 @@ import { corsHeaders } from '../_shared/cors.ts'
 // Updated prompt for the Gemini API
 const FLASHCARD_PROMPT = `
   You are an expert AI assistant for a marine science student.
-  Based on the following learning content, generate a concise set of 3 to 5 flashcards.
+  Based on the provided learning content, generate a comprehensive set of flashcards. The number of flashcards should be proportional to the content's length and detail.
   Your response must be ONLY a valid JSON array of objects.
   Each object must have a "question" and an "answer" field.
   Do not include the word 'json' or any markdown backticks in your response.
 
   Here is the learning content:
 `
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {

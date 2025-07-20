@@ -19,11 +19,11 @@ A modern, AI-powered single-page application designed to help marine science stu
 
 | Dashboard                                   | Learn Today Page                            | Flashcards View                             |
 | ------------------------------------------- | ------------------------------------------- | ------------------------------------------- |
-| *[Screenshot of your Dashboard page here]* | *[Screenshot of your Learn Today page here]* | *[Screenshot of your Flashcards page here]* |
+| ![Dashboard Screenshot](./assets/images/dashboard.png) | ![Learned Today Page Screenshot](./assets/images/learned-today.png) | ![Flashcards View Screenshot](./assets/images/flashcards.png) |
 
 | Specimen Quiz                               |
 | ------------------------------------------- |
-| *[Screenshot of your Specimen Quiz here]*  |
+| ![Specimen Quiz Screenshot](./assets/images/specimen-quiz.png)  |
 
 ## 🛠️ Tech Stack
 

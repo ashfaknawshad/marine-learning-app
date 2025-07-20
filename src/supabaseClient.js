@@ -1,6 +1,10 @@
+import { createClient } from '@supabase/supabase-js'
 
-import { createClient } from '@supabase/supabase-js';
+// Get the variables from the Vite environment
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabase = createClient('https://shgladqypewnsmlmsgot.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNoZ2xhZHF5cGV3bnNtbG1zZ290Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI5ODEzMTksImV4cCI6MjA2ODU1NzMxOX0.HzoM-nSZA8rH8B5I2KI8I-dvtAR30Y8wJcNXct6HEJU');
+// Create and export the Supabase client
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export default supabase;

@@ -42,8 +42,8 @@ const SpecimenQuizPage = () => {
   // Memoize the grouped logs to prevent re-computation on every render
   const groupedLogs = useMemo(() => {
     return logsWithImages.reduce((acc, log) => {
-      const deptName = log.department.name || 'Uncategorized';
-      const moduleName = log.module.name || 'General';
+      const deptName = log.department?.name || 'Uncategorized';
+      const moduleName = log.module?.name || 'General';
 
       if (!acc[deptName]) {
         acc[deptName] = {};
@@ -93,18 +93,18 @@ const SpecimenQuizPage = () => {
     setShowAnswer(true);
   };
 
-  // Component to render the quiz UI (No changes needed here)
+  // Component to render the quiz UI
   const QuizInterface = () => {
     if (isLoading) {
-      return <p className="text-center text-lg font-semibold animate-pulse">🔬 Generating quiz with AI...</p>;
+      return <p className="text-center text-lg font-semibold animate-pulse dark:text-white">🔬 Generating quiz with AI...</p>;
     }
     if (error) {
         return <p className="text-center text-red-500 p-4 bg-red-50 rounded-lg">{error}</p>;
     }
     if (!currentQuiz) {
       return (
-        <div className="text-center text-gray-500 p-10 border-2 border-dashed rounded-lg">
-          <h2 className="text-2xl font-bold mb-2">Welcome to the Specimen Quiz!</h2>
+        <div className="text-center text-gray-500 dark:text-gray-400 p-10 border-2 border-dashed dark:border-gray-600 rounded-lg">
+          <h2 className="text-2xl font-bold mb-2 dark:text-white">Welcome to the Specimen Quiz!</h2>
           <p>Select an entry from the "Available Quizzes" list to begin.</p>
         </div>
       );
@@ -114,8 +114,8 @@ const SpecimenQuizPage = () => {
     const isCorrect = selectedAnswer === quizData.correct_answer;
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-xl animate-fade-in">
-        <h2 className="text-2xl font-bold text-center mb-4">Guess the Specimen!</h2>
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl animate-fade-in">
+        <h2 className="text-2xl font-bold text-center mb-4 dark:text-white">Guess the Specimen!</h2>
         <img src={log.image_url} alt="Specimen" className="w-full h-80 object-cover rounded-lg mb-6 shadow-md"/>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -125,7 +125,7 @@ const SpecimenQuizPage = () => {
                 ? 'bg-green-500 hover:bg-green-600'
                 : option === selectedAnswer
                 ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-gray-300 opacity-70'
+                : 'bg-gray-300 dark:bg-gray-600 opacity-70'
               : 'bg-blue-500 hover:bg-blue-600';
 
             return (
@@ -142,7 +142,7 @@ const SpecimenQuizPage = () => {
         </div>
 
         {showAnswer && (
-          <div className={`mt-6 p-4 rounded-lg text-center font-bold text-xl ${isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <div className={`mt-6 p-4 rounded-lg text-center font-bold text-xl ${isCorrect ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'}`}>
             {isCorrect ? 'Correct! 🎉' : `Not quite. The correct answer is ${quizData.correct_answer}.`}
           </div>
         )}
@@ -153,14 +153,14 @@ const SpecimenQuizPage = () => {
   return (
     <div className="p-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Left Column: Organized list of available quizzes */}
-      <div className="lg:col-span-1 bg-white p-4 rounded-lg shadow-md h-full">
-        <h2 className="text-xl font-semibold mb-3 border-b pb-2">Available Quizzes</h2>
+      <div className="lg:col-span-1 bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md h-full">
+        <h2 className="text-xl font-semibold mb-3 border-b pb-2 dark:text-white dark:border-gray-600">Available Quizzes</h2>
         <div className="space-y-2 max-h-[75vh] overflow-y-auto">
           {Object.keys(groupedLogs).length > 0 ? (
             Object.keys(groupedLogs).map(deptName => (
-              <div key={deptName} className="border-b last:border-b-0">
+              <div key={deptName} className="border-b last:border-b-0 dark:border-gray-700">
                 {/* Department Header */}
-                <button onClick={() => toggleSection(deptName)} className="w-full flex justify-between items-center p-3 font-bold text-lg text-left text-blue-900 hover:bg-blue-50 rounded-md">
+                <button onClick={() => toggleSection(deptName)} className="w-full flex justify-between items-center p-3 font-bold text-lg text-left text-blue-900 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-gray-700 rounded-md">
                   <span>{deptName}</span>
                   <AccordionIcon isOpen={!!openSections[deptName]} />
                 </button>
@@ -169,15 +169,15 @@ const SpecimenQuizPage = () => {
                   <div className="pl-4 pt-2 pb-2 animate-fade-in-down">
                     {Object.keys(groupedLogs[deptName]).map(moduleName => (
                       <div key={moduleName}>
-                        <h4 className="font-semibold text-md text-gray-700 mt-2 mb-1">{moduleName}</h4>
+                        <h4 className="font-semibold text-md text-gray-700 dark:text-gray-400 mt-2 mb-1">{moduleName}</h4>
                         <ul className="space-y-1">
                           {groupedLogs[deptName][moduleName].map(log => (
                             <li 
                               key={log.id} 
                               onClick={() => handleStartQuiz(log)}
-                              className="p-2 rounded-md hover:bg-indigo-100 cursor-pointer transition-colors"
+                              className="p-2 rounded-md hover:bg-indigo-100 dark:hover:bg-indigo-900/40 cursor-pointer transition-colors"
                             >
-                              <p className="text-sm text-gray-800 truncate">{log.text}</p>
+                              <p className="text-sm text-gray-800 dark:text-gray-300 truncate">{log.text}</p>
                             </li>
                           ))}
                         </ul>
@@ -188,7 +188,7 @@ const SpecimenQuizPage = () => {
               </div>
             ))
           ) : (
-            <p className="text-gray-500 p-3">No entries with images found. Add some learning logs with images to create quizzes!</p>
+            <p className="text-gray-500 dark:text-gray-400 p-3">No entries with images found. Add some learning logs with images to create quizzes!</p>
           )}
         </div>
       </div>

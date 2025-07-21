@@ -1,69 +1,76 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'; // 1. Import useCallback
+// src/context/UserContext.jsx
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import supabase from '../supabaseClient';
 
-const UserContext = createContext();
+export const UserContext = createContext();
+
+export const useUser = () => useContext(UserContext);
 
 export const UserProvider = ({ children }) => {
-  const [profile, setProfile] = useState(null);
   const [session, setSession] = useState(null);
-  const [loading, setLoading] = useState(true); // Add loading state
-
-  // 2. Create the function to fetch the profile
-  const fetchProfile = useCallback(async (user) => {
-    if (user) {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching profile:', error);
-        setProfile(null);
-      } else {
-        setProfile(data);
-      }
-    } else {
-      setProfile(null);
-    }
-    setLoading(false);
-  }, []);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true); // 1. Add loading state, default to true
 
   useEffect(() => {
-    // Get initial session and profile
-    const getInitialData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      await fetchProfile(session?.user);
+    const fetchSessionAndProfile = async () => {
+      try {
+        // Get the current session
+        const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+        setSession(currentSession);
+
+        if (sessionError) {
+          throw sessionError;
+        }
+
+        // If there is a session, fetch the corresponding profile
+        if (currentSession) {
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', currentSession.user.id)
+            .single();
+
+          if (profileError) {
+            console.error('Error fetching profile:', profileError);
+          }
+          setProfile(profileData);
+        }
+      } catch (error) {
+        console.error('Error in session/profile fetch:', error);
+      } finally {
+        setLoading(false); // 2. Set loading to false after all checks are done
+      }
     };
 
-    getInitialData();
+    fetchSessionAndProfile();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      fetchProfile(session?.user);
+    // Set up a listener for auth changes (login/logout)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      // You might want to re-fetch the profile here as well if the user changes
+      if (!newSession) {
+        setProfile(null);
+      } else {
+        fetchSessionAndProfile(); // Re-fetch all data on auth change
+      }
     });
-    
-    return () => subscription.unsubscribe();
-  }, [fetchProfile]);
 
-  // 3. This is the new function we will provide to other components
-  const refreshProfile = useCallback(() => {
-    if(session?.user) {
-      fetchProfile(session.user);
-    }
-  }, [session, fetchProfile]);
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, []);
 
-  const value = { session, profile, loading, refreshProfile }; // 4. Add refreshProfile to the context value
+  // 3. Expose the loading state in the context value
+  const value = {
+    session,
+    profile,
+    loading,
+  };
 
-  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
-};
-
-export const useUser = () => {
-  const context = useContext(UserContext);
-  if (context === undefined) {
-    throw new Error('useUser must be used within a UserProvider');
-  }
-  return context;
+  return (
+    <UserContext.Provider value={value}>
+      {children}
+    </UserContext.Provider>
+  );
 };

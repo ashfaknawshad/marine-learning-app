@@ -3,20 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import supabase from '../supabaseClient';
 import DataManager from '../components/DataManager';
+import { useUser } from '../context/UserContext'; // Import useUser
 
 const DashboardPage = () => {
-  const [userEmail, setUserEmail] = useState('');
-
-  // Fetch the current user's data when the component loads
-  useEffect(() => {
-    const getUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserEmail(user.email);
-      }
-    };
-    getUserData();
-  }, []);
+  // Use the profile from UserContext instead of a separate fetch
+  const { profile } = useUser(); 
 
   // Helper function to determine the greeting based on the time of day
   const getGreeting = () => {
@@ -33,14 +24,17 @@ const DashboardPage = () => {
   return (
     <div className="p-6 max-w-4xl mx-auto">
       {/* Dynamic Greeting */}
-      <h1 className="text-4xl font-bold text-gray-800">
+      {/* DARK MODE: Added dark:text-white */}
+      <h1 className="text-4xl font-bold text-gray-800 dark:text-white">
         {getGreeting()}
       </h1>
-      <p className="text-lg text-gray-600 mb-8">
-        Welcome back, <span className="font-semibold">{userEmail}</span>. Let's get learning.
+      {/* DARK MODE: Added dark:text-gray-300 */}
+      <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+        {/* Use profile.full_name for a better welcome message */}
+        Welcome back, <span className="font-semibold">{profile?.full_name || 'Explorer'}</span>. Let's get learning.
       </p>
       
-      {/* Data Management Component */}
+      {/* Data Management Component will also need dark mode styles */}
       <DataManager />
     </div>
   );

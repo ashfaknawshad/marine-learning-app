@@ -72,7 +72,7 @@ const Navbar = () => {
                 {profile.full_name}
               </span>
             )}
-            <NavLink to="/profile" title="Go to your profile">
+            <NavLink to="/profile" title="Go to your profile" className="flex-shrink-0">
               <img
                 src={profile?.avatar_url || fallbackAvatar}
                 alt="User profile"

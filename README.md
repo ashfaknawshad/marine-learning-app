@@ -4,34 +4,26 @@ A modern, AI-powered single-page application designed to help marine science stu
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
+![Marine Learning Hub Screenshot](https://i.imgur.com/7HkY4eA.png)
+
 ## ✨ Features
 
-*   **🔐 Secure User Authentication:** Full login/signup functionality. All user data is protected and private.
-*   **✍️ Daily Learning Logs:** A dedicated page to log what you learned in natural language, with the option to upload reference images for specimens.
+*   **🔐 Full User Authentication:** Secure sign-up/sign-in with email verification.
+*   **👤 Complete Profile System:** Users can manage their full name, bio, and upload a custom avatar.
+*   **🎨 Light & Dark Mode:** A seamless, persistent light and dark theme is available across the entire application.
+*   **✍️ Daily Learning Logs:** A dedicated page to log what you learned, with the option to upload reference images for specimens.
 *   **🗂️ Dynamic Content Management:** A powerful dashboard to create, read, edit, and delete your custom `Departments` and `Modules` of study.
-*   **🧠 AI-Powered Flashcards:** Automatically generate a comprehensive set of study flashcards from the combined knowledge of an entire module with a single click.
-*   **🐠 "Guess the Specimen" Quizzes:** AI generates multiple-choice quizzes from your image uploads, helping you practice visual identification.
-*   **🎨 Colorful & Interactive UI:** Built with Tailwind CSS for a professional, highly interactive, and responsive user experience.
-
-## 📸 Screenshots
-
-*(**Action Required:** Replace these placeholders with actual screenshots of your app!)*
-
-| Dashboard                                   | Learn Today Page                            | Flashcards View                             |
-| ------------------------------------------- | ------------------------------------------- | ------------------------------------------- |
-| ![Dashboard Screenshot](./assets/images/dashboard.png) | ![Learned Today Page Screenshot](./assets/images/learned-today.png) | ![Flashcards View Screenshot](./assets/images/flashcards.png) |
-
-| Specimen Quiz                               |
-| ------------------------------------------- |
-| ![Specimen Quiz Screenshot](./assets/images/specimen-quiz.png)  |
+*   **🧠 AI-Powered Flashcards:** Automatically generate a set of study flashcards from an entire module's knowledge with a single click.
+*   **🐠 AI Specimen Quizzes:** Generates multiple-choice quizzes from your image uploads to practice visual identification.
+*   **🔒 Secure Account Deletion:** Users can permanently delete their account and all associated data.
 
 ## 🛠️ Tech Stack
 
 *   **Frontend:** [React](https://reactjs.org/) (with Vite)
+*   **State Management:** [React Context API](https://reactjs.org/docs/context.html)
 *   **Backend & Database:** [Supabase](https://supabase.io/)
-    *   PostgreSQL Database
-    *   User Authentication
-    *   Object Storage
+    *   PostgreSQL Database & User Authentication
+    *   Object Storage (for images and avatars)
     *   Edge Functions (Deno runtime)
 *   **AI:** [Google Gemini API](https://makersuite.google.com/)
 *   **Styling:** [Tailwind CSS](https://tailwindcss.com/)
@@ -39,11 +31,10 @@ A modern, AI-powered single-page application designed to help marine science stu
 
 ## 🚀 Getting Started
 
-Follow these instructions to get a local copy up and running on your machine for development and testing purposes.
+Follow these instructions to get a local copy up and running.
 
 ### Prerequisites
 
-You will need the following software installed on your computer:
 *   [Git](https://git-scm.com/downloads)
 *   [Node.js](https://nodejs.org/en/) (which includes `npm`)
 *   A free [Supabase](https://app.supabase.com) account
@@ -51,10 +42,10 @@ You will need the following software installed on your computer:
 
 ### Installation & Setup
 
-1.  **Clone the repository** to your local machine:
+1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/YOUR_USERNAME/YOUR_REPO_NAME.git
-    cd YOUR_REPO_NAME
+    git clone https://github.com/ashfaknawshad/marine-learning-app.git
+    cd marine-learning-app
     ```
 
 2.  **Install NPM packages:**
@@ -62,46 +53,59 @@ You will need the following software installed on your computer:
     npm install
     ```
 
-3.  **Set up your Supabase project:**
-    *   Create a new project on your Supabase dashboard.
-    *   In your Supabase project, go to `Project Settings > API` and find your **Project URL** and **`anon` public key**.
-    *   Go to your `supabaseClient.js` file and replace the placeholder values with your URL and key.
-    *   **(Important!)** In the Supabase SQL Editor, run the SQL commands to create the `departments`, `modules`, and `learning_logs` tables with their respective `user_id` columns and foreign key relationships with `CASCADE` on delete.
+3.  **Set up Local Environment Variables:**
+    *   Create a new file named `.env.local` in the project's root directory.
+    *   Add your Supabase Project URL and `anon` key to this file. Vite requires the `VITE_` prefix for these variables to be exposed to the browser.
+    ```.env.local
+    VITE_SUPABASE_URL=https://your-project-url.supabase.co
+    VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+    ```
 
-4.  **Link your local project to Supabase:**
+4.  **Set up Supabase Backend:**
+    *   In your Supabase project's SQL Editor, run the necessary SQL commands to create the `profiles`, `departments`, `modules`, and `learning_logs` tables.
+    *   Set up your Storage buckets for `avatars` and `learning-images`.
+    *   Set up the database trigger that creates a new user profile upon signup.
+
+5.  **Link and Configure Supabase CLI:**
     *   Log in to the Supabase CLI:
         ```bash
         npx supabase login
         ```
-    *   Link your project (get the Project REF from your Supabase dashboard URL):
+    *   Link your project (find your Project REF in your Supabase dashboard URL):
         ```bash
         npx supabase link --project-ref YOUR_PROJECT_REF
         ```
-
-5.  **Set up the Gemini API Key:**
-    *   This project uses a secret key for the AI service. Set it using the Supabase CLI (this will not expose the key in your code):
+    *   Set your Gemini API key as a secret for your Edge Functions:
         ```bash
         npx supabase secrets set GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
         ```
 
 6.  **Deploy Edge Functions:**
-    *   Push the server-side AI logic to Supabase:
-        ```bash
-        npx supabase functions deploy flashcard-generator
-        npx supabase functions deploy quiz-generator
-        ```
+    ```bash
+    npx supabase functions deploy flashcard-generator
+    npx supabase functions deploy quiz-generator
+    npx supabase functions deploy delete-user
+    ```
 
-7.  **Run the application:**
+7.  **Run the application locally:**
     ```bash
     npm run dev
     ```
-    Your application should now be running locally on `http://localhost:5173`.
+    Your application should now be running on `http://localhost:5173`.
+
+## 🚢 Deployment
+
+This application is deployed on **Vercel** with automatic deployments from the `main` branch. For a successful deployment, the following Environment Variables must be set in the Vercel project settings:
+
+*   `VITE_SUPABASE_URL`
+*   `VITE_SUPABASE_ANON_KEY`
+*   `GEMINI_API_KEY` (if used by Vercel-hosted functions, otherwise it's handled by Supabase secrets)
 
 ## 💡 Future Enhancements
 
-*   **Spaced Repetition System (SRS):** Implement an algorithm (like SM-2) to schedule flashcard reviews for optimal learning.
-*   **Progress Analytics:** Create a visual dashboard to track learning streaks, quiz scores, and module mastery.
-*   **Public/Shared Decks:** Allow users to share their flashcard decks with others.
+*   **Spaced Repetition System (SRS):** Implement an algorithm to schedule flashcard reviews for optimal learning.
+*   **Progress Analytics:** A visual dashboard to track learning streaks, quiz scores, and module mastery.
+*   **Public/Shared Decks:** Allow users to share their flashcard decks.
 *   **More Quiz Types:** Add "fill-in-the-blank" or "type the answer" quizzes.
 
 ## 📄 License

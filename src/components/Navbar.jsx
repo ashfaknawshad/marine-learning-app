@@ -29,7 +29,7 @@ const Navbar = () => {
     await supabase.auth.signOut();
   };
 
-  const fallbackAvatar = `https://api.pravatar.cc/150?u=${session?.user?.id}`;
+  const fallbackAvatar = `fallback-avatar.png`;
 
   const closeMenu = () => setIsMenuOpen(false);
 

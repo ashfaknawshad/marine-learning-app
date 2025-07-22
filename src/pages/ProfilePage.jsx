@@ -105,7 +105,7 @@ const ProfilePage = () => {
             {/* --- Avatar Section (New UI) --- */}
             <div className="flex items-center space-x-6">
               <img 
-                src={profile.avatar_url || `https://api.pravatar.cc/150?u=${session.user.id}`} 
+                src={profile.avatar_url || `fallback-avatar.png`} 
                 alt="Profile" 
                 className="w-24 h-24 rounded-full object-cover border-4 border-gray-200 dark:border-gray-600"
               />

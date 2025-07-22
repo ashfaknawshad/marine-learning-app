@@ -5,53 +5,83 @@ import { corsHeaders } from '../_shared/cors.ts'
 console.log("Delete user function is running!");
 
 serve(async (req) => {
-  // This is needed for CORS preflight requests.
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    // 1. Create a Supabase client with SERVICE_ROLE_KEY for admin privileges.
-    // This is safe to do in a server-side Edge Function.
-    // It uses the new, valid secret name 'SERVICE_ROLE_KEY'.
+    // 1. Create Supabase admin client with the SERVICE_ROLE_KEY
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SERVICE_ROLE_KEY') ?? ''
-    )
+    );
 
-    // 2. Get the user object from the request's authorization header.
-    // This is how we identify who is calling the function.
+    // 2. Get the user object from the request's authorization header to identify the user
     const userClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
-    )
-    const { data: { user } } = await userClient.auth.getUser()
+    );
+    const { data: { user } } = await userClient.auth.getUser();
 
-    // 3. Check if a user was found. If not, they are not authenticated.
+    // 3. Check if a user was found
     if (!user) {
-      throw new Error("Authentication error: Could not find user.")
+      throw new Error("Authentication error: Could not find user.");
     }
 
-    // 4. Perform the deletion using the admin client.
-    // This is the protected administrative action.
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(user.id)
+    // --- NEW STEP 4: CLEAN UP ALL ASSOCIATED PUBLIC DATA ---
+    // This must happen BEFORE deleting the user from auth.
+    // The order here matters to respect foreign key constraints.
 
-    if (error) {
-      throw error
+    // 4a. Delete Learning Logs (depends on modules and departments)
+    const { error: logsError } = await supabaseAdmin
+      .from('learning_logs')
+      .delete()
+      .eq('user_id', user.id);
+    if (logsError) throw new Error(`Failed to delete learning logs: ${logsError.message}`);
+
+    // 4b. Delete Modules (depends on departments)
+    const { error: modulesError } = await supabaseAdmin
+      .from('modules')
+      .delete()
+      .eq('user_id', user.id);
+    if (modulesError) throw new Error(`Failed to delete modules: ${modulesError.message}`);
+
+    // 4c. Delete Departments (no other dependencies in this group)
+    const { error: deptsError } = await supabaseAdmin
+      .from('departments')
+      .delete()
+      .eq('user_id', user.id);
+    if (deptsError) throw new Error(`Failed to delete departments: ${deptsError.message}`);
+    
+    // 4d. Delete Profile (depends only on auth.users)
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', user.id);
+    if (profileError) throw new Error(`Failed to delete profile: ${profileError.message}`);
+
+
+    // --- STEP 5: PERFORM THE FINAL AUTH USER DELETION ---
+    // This is now safe to do because no other tables reference this user.id.
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(user.id);
+    if (authError) {
+      // This might catch cases like the user being already deleted or other issues.
+      throw new Error(`Failed to delete auth user: ${authError.message}`);
     }
 
-    // 5. Return a success response.
+    // --- STEP 6: RETURN SUCCESS ---
     return new Response(JSON.stringify({ message: "User deleted successfully" }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    })
+    });
 
   } catch (error) {
-    // 6. Return an error response if anything went wrong.
+    // --- STEP 7: RETURN ERROR ---
+    console.error("Error in delete-user function:", error.message); // Log the specific error on the server
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400,
-    })
+      status: 500, // Using 500 for server-side errors is more appropriate
+    });
   }
-})
+});

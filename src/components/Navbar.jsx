@@ -1,3 +1,5 @@
+// src/components/Navbar.jsx
+
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import Logo from './Logo';
@@ -36,19 +38,14 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           
-          {/* --- LEFT SIDE --- */}
-          {/* This is the logo on the far left. It doesn't change. */}
           <div className="flex-shrink-0">
             <NavLink to="/" onClick={closeMenu}>
               <Logo />
             </NavLink>
           </div>
 
-          {/* --- RIGHT SIDE (NEW GROUPING) --- */}
-          {/* This new div groups the nav links and profile section together. */}
-          {/* The parent `justify-between` will now push this entire group to the right. */}
+          {/* --- DESKTOP VIEW --- */}
           <div className="hidden lg:flex items-center">
-
             {/* Navigation Links */}
             <div className="flex items-center space-x-1">
               <NavLink to="/" end className="text-gray-600 dark:text-gray-300 hover:bg-blue-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors" style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}>Dashboard</NavLink>
@@ -58,7 +55,6 @@ const Navbar = () => {
             </div>
 
             {/* Profile Section */}
-            {/* The `ml-10` creates the visual separation between the nav links and the profile area. */}
             <div className="flex items-center ml-10 space-x-4">
               <button
                 onClick={toggleTheme}
@@ -68,48 +64,28 @@ const Navbar = () => {
                 {theme === 'light' ? <MoonIcon /> : <SunIcon />}
               </button>
 
-              {profile?.full_name && (
-                <span className="text-gray-700 dark:text-gray-200 font-semibold">
-                  {profile.full_name}
-                </span>
-              )}
+              {profile?.full_name && (<span className="text-gray-700 dark:text-gray-200 font-semibold">{profile.full_name}</span>)}
               <NavLink to="/profile" title="Go to your profile" className="flex-shrink-0">
-                <img
-                  src={profile?.avatar_url || fallbackAvatar}
-                  alt="User profile"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-blue-400 hover:border-blue-600 transition-all"
-                />
+                <img src={profile?.avatar_url || fallbackAvatar} alt="User profile" className="w-10 h-10 rounded-full object-cover border-2 border-blue-400 hover:border-blue-600 transition-all" />
               </NavLink>
-              <button
-                onClick={handleSignOut}
-                className="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition-colors"
-              >
+              <button onClick={handleSignOut} className="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-600 transition-colors">
                 Sign Out
               </button>
             </div>
           </div>
 
           {/* --- MOBILE HAMBURGER BUTTON --- */}
-          {/* This is hidden on large screens and doesn't change. */}
           <div className="lg:hidden flex items-center">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
-            >
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none">
               <svg className="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                {isMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />
-                )}
+                {isMenuOpen ? (<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />) : (<path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7" />)}
               </svg>
             </button>
           </div>
         </div>
       </div>
 
-      {/* --- MOBILE MENU --- */}
-      {/* This section doesn't change. */}
+      {/* --- MOBILE MENU (WITH THE FIX) --- */}
        {isMenuOpen && (
         <div className="lg:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
@@ -119,25 +95,32 @@ const Navbar = () => {
             <NavLink to="/specimen-quiz" onClick={closeMenu} className="block text-gray-600 dark:text-gray-300 hover:bg-blue-400 hover:text-white px-3 py-2 rounded-md text-base font-medium transition-colors" style={({ isActive }) => (isActive ? activeLinkStyle : undefined)}>Specimen Quiz</NavLink>
           </div>
           <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex items-center px-5">
-              <NavLink to="/profile" onClick={closeMenu} className="flex-shrink-0">
-                <img
-                  src={profile?.avatar_url || fallbackAvatar}
-                  alt="User profile"
-                  className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"
-                />
-              </NavLink>
-              <div className="ml-3">
-                <div className="text-base font-medium text-gray-800 dark:text-white">{profile?.full_name}</div>
-                <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{session?.user?.email}</div>
+            {/* This is the profile header within the mobile menu */}
+            <div className="flex items-center justify-between px-5"> {/* <-- ADDED justify-between */}
+              {/* This group contains the avatar and name */}
+              <div className="flex items-center">
+                <NavLink to="/profile" onClick={closeMenu} className="flex-shrink-0">
+                  <img src={profile?.avatar_url || fallbackAvatar} alt="User profile" className="w-10 h-10 rounded-full object-cover border-2 border-blue-400"/>
+                </NavLink>
+                <div className="ml-3">
+                  <div className="text-base font-medium text-gray-800 dark:text-white">{profile?.full_name}</div>
+                  <div className="text-sm font-medium text-gray-500 dark:text-gray-400">{session?.user?.email}</div>
+                </div>
               </div>
+              
+              {/* FIX: THEME TOGGLE BUTTON ADDED HERE */}
+              <button
+                onClick={toggleTheme}
+                className="p-2 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+              </button>
             </div>
+
             <div className="mt-3 px-2 space-y-1">
                <NavLink to="/profile" onClick={closeMenu} className="block px-3 py-2 rounded-md text-base font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700">Your Profile</NavLink>
-              <button
-                onClick={() => { handleSignOut(); closeMenu(); }}
-                className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50"
-              >
+              <button onClick={() => { handleSignOut(); closeMenu(); }} className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50">
                 Sign Out
               </button>
             </div>

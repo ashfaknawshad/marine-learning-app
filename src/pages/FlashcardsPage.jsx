@@ -1,7 +1,7 @@
 // src/pages/FlashcardsPage.jsx
 
 import React, { useState, useEffect } from 'react';
-import supabase from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 
 const FlashcardsPage = () => {
   const [departments, setDepartments] = useState([]);

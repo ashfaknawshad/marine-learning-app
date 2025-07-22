@@ -1,7 +1,7 @@
 // src/components/DataManager.jsx
 
 import React, { useState, useEffect } from 'react';
-import supabase from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { useUser } from '../context/UserContext';
 import EditModal from './EditModal'; // <-- IMPORT THE NEW MODAL
 

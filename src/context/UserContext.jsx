@@ -1,8 +1,8 @@
 // src/context/UserContext.jsx
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import supabase from '../supabaseClient';
-
+// This is the correct line for UserContext.jsx
+import { supabase } from '../supabaseClient';
 export const UserContext = createContext();
 
 export const useUser = () => useContext(UserContext);

@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import Logo from './Logo';
-import supabase from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { useUser } from '../context/UserContext';
 import { useTheme } from '../context/ThemeContext';
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import supabase from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { useUser } from '../context/UserContext';
 import { useTheme } from '../context/ThemeContext'; // Import the useTheme hook
 import Logo from './Logo';

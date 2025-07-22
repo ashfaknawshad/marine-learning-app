@@ -1,7 +1,7 @@
 // src/pages/DashboardPage.jsx
 
 import React, { useState, useEffect } from 'react';
-import supabase from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import DataManager from '../components/DataManager';
 import { useUser } from '../context/UserContext'; // Import useUser
 

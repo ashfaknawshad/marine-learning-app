@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import supabase from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { useUser } from '../context/UserContext';
 
 // Note: I'm not importing useNavigate as your logic handles UI updates via alerts and refreshes.

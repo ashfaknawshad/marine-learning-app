@@ -1,7 +1,7 @@
 // src/pages/LearnTodayPage.jsx
 
 import React, { useState, useEffect, useCallback } from 'react';
-import supabase from '../supabaseClient';
+import { supabase } from '../supabaseClient';
 import { useUser } from '../context/UserContext';
 
 const LearnTodayPage = () => {

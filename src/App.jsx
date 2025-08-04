@@ -1,10 +1,13 @@
+// src/App.jsx
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useUser } from './context/UserContext';
 
 // Import Components
 import Navbar from './components/Navbar';
-import Auth from './components/Auth'; // Your login/signup component
+import Auth from './components/Auth';
+import Footer from './components/Footer'; // 1. IMPORT THE FOOTER
 
 // Import Page Components
 import DashboardPage from './pages/DashboardPage';
@@ -16,8 +19,6 @@ import ProfilePage from './pages/ProfilePage';
 function App() {
   const { session, loading } = useUser();
 
-  // 1. Display a full-page loading indicator while Supabase checks the session.
-  // This is the most important part of the fix.
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -26,14 +27,13 @@ function App() {
     );
   }
 
-  // 2. Once loading is complete, render the correct view based on session status.
+  // 2. The main container is now a flex column to manage layout
   return (
-    <div className="bg-gray-50 dark:bg-gray-800 min-h-screen">
-      {/* The Navbar is only rendered if a session exists */}
+    <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-800">
       {session && <Navbar />}
       
-      {/* The 'pt-20' class adds top padding to account for the sticky navbar height */}
-      <main className={session ? "pt-20" : ""}>
+      {/* 3. The main content area grows to push the footer down */}
+      <main className={`flex-grow ${session ? "pt-20" : ""}`}>
         <Routes>
           {session ? (
             // --- Protected Routes (User is Logged In) ---
@@ -43,16 +43,17 @@ function App() {
               <Route path="/flashcards" element={<FlashcardsPage />} />
               <Route path="/specimen-quiz" element={<SpecimenQuizPage />} />
               <Route path="/profile" element={<ProfilePage />} />
-              {/* If a logged-in user tries to go to a non-existent page, redirect them to the dashboard */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </>
           ) : (
             // --- Public Route (User is Logged Out) ---
-            // The Auth component is shown for any path.
             <Route path="*" element={<Auth />} />
           )}
         </Routes>
       </main>
+      
+      {/* 4. The Footer is placed here, outside of main, so it's always at the bottom */}
+      <Footer />
     </div>
   );
 }

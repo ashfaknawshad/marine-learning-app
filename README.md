@@ -134,4 +134,10 @@ This project is licensed under the MIT License.
 
 ---
 
-Built with ❤️ by Ashfak.
+## Author
+
+This application was designed and developed by **Ashfak Nawshad**.
+
+- **GitHub**: [@ashfaknawshad](https://github.com/ashfaknawshad)
+- **LinkedIn**: [Your Profile URL](https://www.linkedin.com/in/ashfaknawshad/)
+- **Portfolio**: [your-portfolio.com](https://your-portfolio.com)

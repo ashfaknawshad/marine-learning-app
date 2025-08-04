@@ -117,6 +117,12 @@ export default function Auth() {
           </button>
         </div>
       </div>
+       <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+      A Marine Learning App by{' '}
+      <a href="https://github.com/ashfaknawshad" target="_blank" rel="noopener noreferrer" className="font-medium text-blue-600 hover:underline dark:text-blue-400">
+        Ashfak Nawshad
+      </a>
+    </p>
     </div>
   );
 }

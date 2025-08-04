@@ -8,7 +8,7 @@ const Footer = () => {
   const yourLinks = {
     github: 'https://github.com/ashfaknawshad',
     linkedin: 'https://www.linkedin.com/in/ashfaknawshad/', // Add your LinkedIn
-    portfolio: 'https://your-portfolio.com' // Add your portfolio or personal site
+    portfolio: 'https://ashfak-portfolio-ivory.vercel.app/' // Add your portfolio or personal site
   };
 
   return (

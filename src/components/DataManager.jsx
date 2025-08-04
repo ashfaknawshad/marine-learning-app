@@ -1,153 +1,214 @@
 // src/components/DataManager.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { useUser } from '../context/UserContext';
-import EditModal from './EditModal'; // <-- IMPORT THE NEW MODAL
+import { FiChevronRight, FiChevronDown, FiTrash2, FiEdit } from 'react-icons/fi'; // Added FiEdit
 
 const DataManager = () => {
-  const [departments, setDepartments] = useState([]);
-  const [loading, setLoading] = useState(true);
   const { profile } = useUser();
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   
-  // NEW STATE: To manage which item is being edited
-  const [editingItem, setEditingItem] = useState(null); 
+  // State for UI interactions
+  const [openItems, setOpenItems] = useState({});
+  const [editingItem, setEditingItem] = useState(null); // e.g., { id: 1, name: 'Old Name', tableName: 'departments' }
 
-  const fetchData = async () => {
+  // --- DATA FETCHING (Unchanged) ---
+  const fetchData = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
-    const { data, error } = await supabase
+    const { data: departmentData, error } = await supabase
       .from('departments')
-      .select('id, name, modules(id, name)')
+      .select('id, name, modules (id, name, subtopics (id, name))')
       .eq('user_id', profile.id)
-      .order('name');
+      .order('name', { ascending: true })
+      .order('name', { foreignTable: 'modules', ascending: true })
+      .order('name', { foreignTable: 'modules.subtopics', ascending: true });
+
+    if (error) console.error('Error fetching managed data:', error.message);
+    else setData(departmentData);
     
+    setLoading(false);
+  }, [profile]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // --- UI HANDLERS ---
+  const toggleItem = (id) => setOpenItems(prev => ({ ...prev, [id]: !prev[id] }));
+  
+  const handleEdit = (item, tableName, event) => {
+    event.stopPropagation(); // Prevent accordion from toggling when clicking edit
+    setEditingItem({ id: item.id, name: item.name, tableName });
+  };
+
+  const handleCancelEdit = (event) => {
+    if (event) event.stopPropagation();
+    setEditingItem(null);
+  };
+  
+  const handleSave = async (event) => {
+    event.stopPropagation();
+    if (!editingItem?.name.trim()) {
+      alert("Name cannot be empty.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase
+      .from(editingItem.tableName)
+      .update({ name: editingItem.name.trim() })
+      .eq('id', editingItem.id);
+
     if (error) {
-      console.error('Error fetching data:', error.message);
+      alert(`Error updating item: ${error.message}`);
     } else {
-      setDepartments(data);
+      setEditingItem(null); // Exit edit mode
+      await fetchData(); // Refresh data to show the change
     }
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [profile]);
-
-  // --- HANDLER FUNCTIONS ---
-
-  const handleDelete = async (type, id) => {
-    const table = type === 'department' ? 'departments' : 'modules';
-    const confirmationMessage = type === 'department'
-      ? 'Are you sure you want to delete this department and all its modules?'
-      : 'Are you sure you want to delete this module?';
-
-    if (!window.confirm(confirmationMessage)) return;
-
-    const { error } = await supabase.from(table).delete().eq('id', id);
-
-    if (error) {
-      console.error(`Error deleting ${type}:`, error.message);
-      alert(`Failed to delete ${type}.`);
-    } else {
-      fetchData();
+  const handleDelete = async (tableName, id, event) => {
+    event.stopPropagation(); // Prevent accordion from toggling
+    // eslint-disable-next-line no-restricted-globals
+    if (confirm('Are you sure you want to delete this item? This will also delete all items nested under it.')) {
+      setLoading(true);
+      const { error } = await supabase.from(tableName).delete().eq('id', id);
+      if (error) alert(`Error deleting item: ${error.message}`);
+      else await fetchData();
+      setLoading(false);
     }
   };
 
-  // UPDATED: This function now opens the modal
-  const handleEdit = (type, item) => {
-    setEditingItem({ ...item, type });
-  };
-
-  // NEW: This function saves the changes from the modal
-  const handleUpdate = async (newName) => {
-    if (!editingItem || !newName.trim()) {
-      setEditingItem(null);
-      return;
-    }
-    
-    const table = editingItem.type === 'department' ? 'departments' : 'modules';
-
-    const { error } = await supabase
-      .from(table)
-      .update({ name: newName.trim() }) // The new data
-      .eq('id', editingItem.id);       // Which row to update
-
-    if (error) {
-      console.error(`Error updating ${editingItem.type}:`, error.message);
-      alert('Failed to update. Please try again.');
-    } else {
-      fetchData(); // Refresh the data to show the new name
-    }
-
-    setEditingItem(null); // Close the modal
-  };
-  
-  // ( ... loading and empty states remain the same ... )
-  if (loading) { /* ... */ }
-  if (!loading && departments.length === 0) { /* ... */ }
+  // --- RENDER LOGIC ---
+  if (loading && data.length === 0) return <p className="dark:text-gray-400">Loading your data...</p>;
+  if (!loading && data.length === 0) return (
+    <div className="text-center p-8 bg-gray-50 dark:bg-gray-800 rounded-lg">
+      <h3 className="text-xl font-semibold dark:text-white">Nothing here yet!</h3>
+      <p className="text-gray-500 dark:text-gray-400 mt-2">Go to the "Learn Today" page to create your first Department.</p>
+    </div>
+  );
 
   return (
-    <> {/* Use a fragment to wrap the modal and the main div */}
-      {/* Conditionally render the modal when 'editingItem' is not null */}
-      {editingItem && (
-        <EditModal 
-          item={editingItem}
-          onClose={() => setEditingItem(null)} // Function to close the modal
-          onSave={handleUpdate}                 // Function to save changes
-        />
-      )}
-
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-          Manage Departments & Modules
-        </h2>
-        <div className="space-y-4">
-          {departments.map((dept) => (
-            <div key={dept.id} className="p-4 rounded-md border-b dark:border-gray-700">
-              <div className="flex justify-between items-center">
-                <h3 className="text-xl font-semibold text-blue-600 dark:text-blue-400">{dept.name}</h3>
-                <div>
-                  <button 
-                    onClick={() => handleEdit('department', dept)} // Pass the whole object
-                    className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline mr-3"
-                  >
-                    Edit
-                  </button>
-                  <button 
-                    onClick={() => handleDelete('department', dept.id)} // Pass type and ID
-                    className="text-sm font-medium text-red-600 dark:text-red-400 hover:underline"
-                  >
-                    Delete
-                  </button>
-                </div>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 relative">
+      {loading && <div className="absolute inset-0 bg-white/50 dark:bg-black/50 animate-pulse rounded-lg z-10"></div>}
+      <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Your Study Hierarchy</h2>
+      <ul className="space-y-2">
+        {data.map(dept => (
+          <li key={dept.id} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1">
+            {/* Department Level */}
+            <div onClick={() => toggleItem(`dept-${dept.id}`)} className="flex items-center justify-between p-3 cursor-pointer">
+              <div className="flex items-center flex-grow">
+                <span className="mr-2 text-gray-500 dark:text-gray-400">
+                  {dept.modules.length > 0 ? (openItems[`dept-${dept.id}`] ? <FiChevronDown /> : <FiChevronRight />) : <span className="w-4 inline-block"></span>}
+                </span>
+                {editingItem?.id === dept.id ? (
+                  <input
+                    type="text"
+                    value={editingItem.name}
+                    onChange={(e) => setEditingItem(prev => ({ ...prev, name: e.target.value }))}
+                    onClick={(e) => e.stopPropagation()}
+                    className="py-1 px-2 rounded-md border-blue-500 border bg-white dark:bg-gray-600 dark:text-white"
+                    autoFocus
+                  />
+                ) : (
+                  <span className="font-bold text-lg text-gray-800 dark:text-gray-100">{dept.name}</span>
+                )}
               </div>
-              <div className="mt-2 pl-4">
-                {dept.modules.map((mod) => (
-                  <div key={mod.id} className="flex justify-between items-center py-1">
-                    <p className="text-gray-700 dark:text-gray-300">{mod.name}</p>
-                     <div>
-                      <button 
-                        onClick={() => handleEdit('module', mod)} // Pass the whole object
-                        className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline mr-3"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => handleDelete('module', mod.id)} // Pass type and ID
-                        className="text-xs font-medium text-red-600 dark:text-red-400 hover:underline"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div className="flex items-center gap-2 text-gray-400">
+                {editingItem?.id === dept.id ? (
+                  <>
+                    <button onClick={handleSave} className="text-green-500 hover:text-green-400 p-1 rounded-md transition-colors font-semibold text-sm">Save</button>
+                    <button onClick={handleCancelEdit} className="text-red-500 hover:text-red-400 p-1 rounded-md transition-colors font-semibold text-sm">Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    <button onClick={(e) => handleEdit(dept, 'departments', e)} className="hover:text-blue-500 p-1 rounded-md transition-colors"><FiEdit /></button>
+                    <button onClick={(e) => handleDelete('departments', dept.id, e)} className="hover:text-red-500 p-1 rounded-md transition-colors"><FiTrash2 /></button>
+                  </>
+                )}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </>
+
+            {/* Module Level */}
+            {openItems[`dept-${dept.id}`] && dept.modules.length > 0 && (
+              <ul className="space-y-1 pl-8 pr-2 pb-2">
+                {dept.modules.map(mod => (
+                  <li key={mod.id} className="bg-white dark:bg-gray-700 rounded-md">
+                    <div onClick={() => toggleItem(`mod-${mod.id}`)} className="flex items-center justify-between p-2 cursor-pointer">
+                      <div className="flex items-center flex-grow">
+                         <span className="mr-2 text-gray-500 dark:text-gray-400">
+                          {mod.subtopics.length > 0 ? (openItems[`mod-${mod.id}`] ? <FiChevronDown /> : <FiChevronRight />) : <span className="w-4 inline-block"></span>}
+                        </span>
+                         {editingItem?.id === mod.id ? (
+                           <input
+                            type="text"
+                            value={editingItem.name}
+                            onChange={(e) => setEditingItem(prev => ({ ...prev, name: e.target.value }))}
+                            onClick={(e) => e.stopPropagation()}
+                            className="py-1 px-2 rounded-md border-blue-500 border bg-white dark:bg-gray-600 dark:text-white"
+                            autoFocus
+                           />
+                         ) : (
+                           <span className="font-semibold text-gray-700 dark:text-gray-200">{mod.name}</span>
+                         )}
+                      </div>
+                      <div className="flex items-center gap-2 text-gray-400">
+                        {editingItem?.id === mod.id ? (
+                          <>
+                            <button onClick={handleSave} className="text-green-500 hover:text-green-400 p-1 rounded-md transition-colors font-semibold text-sm">Save</button>
+                            <button onClick={handleCancelEdit} className="text-red-500 hover:text-red-400 p-1 rounded-md transition-colors font-semibold text-sm">Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={(e) => handleEdit(mod, 'modules', e)} className="hover:text-blue-500 p-1 rounded-md transition-colors"><FiEdit /></button>
+                            <button onClick={(e) => handleDelete('modules', mod.id, e)} className="hover:text-red-500 p-1 rounded-md transition-colors"><FiTrash2 /></button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Subtopic Level */}
+                    {openItems[`mod-${mod.id}`] && mod.subtopics.length > 0 && (
+                      <ul className="space-y-1 pl-10 pr-2 pb-2">
+                        {mod.subtopics.map(sub => (
+                          <li key={sub.id} className="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600/50">
+                            {editingItem?.id === sub.id ? (
+                              <>
+                                <input
+                                  type="text"
+                                  value={editingItem.name}
+                                  onChange={(e) => setEditingItem(prev => ({ ...prev, name: e.target.value }))}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="py-1 px-2 rounded-md border-blue-500 border bg-white dark:bg-gray-600 dark:text-white w-full"
+                                  autoFocus
+                                />
+                                <div className="flex items-center gap-2 ml-2">
+                                    <button onClick={handleSave} className="text-green-500 hover:text-green-400 p-1 rounded-md transition-colors font-semibold text-sm">Save</button>
+                                    <button onClick={handleCancelEdit} className="text-red-500 hover:text-red-400 p-1 rounded-md transition-colors font-semibold text-sm">Cancel</button>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-gray-600 dark:text-gray-300">{sub.name}</span>
+                                <div className="flex items-center gap-2 text-gray-400">
+                                  <button onClick={(e) => handleEdit(sub, 'subtopics', e)} className="hover:text-blue-500 p-1 rounded-md transition-colors"><FiEdit /></button>
+                                  <button onClick={(e) => handleDelete('subtopics', sub.id, e)} className="hover:text-red-500 p-1 rounded-md transition-colors"><FiTrash2 /></button>
+                                </div>
+                              </>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 };
 

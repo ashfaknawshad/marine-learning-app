@@ -12,18 +12,24 @@ const LearnTodayPage = () => {
   const [imageFile, setImageFile] = useState(null);
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [selectedModule, setSelectedModule] = useState('');
+  // --- NEW STATE ---
+  const [selectedSubtopic, setSelectedSubtopic] = useState('');
   const [newDepartment, setNewDepartment] = useState('');
   const [newModule, setNewModule] = useState('');
+  // --- NEW STATE ---
+  const [newSubtopic, setNewSubtopic] = useState('');
 
   // Data state
   const [departments, setDepartments] = useState([]);
   const [modules, setModules] = useState([]);
+  // --- NEW STATE ---
+  const [subtopics, setSubtopics] = useState([]);
   
   // UI state
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // --- DATA FETCHING LOGIC (Unchanged) ---
+  // --- DATA FETCHING LOGIC ---
 
   const fetchDepartments = useCallback(async () => {
     if (!profile) return;
@@ -38,6 +44,8 @@ const LearnTodayPage = () => {
     const fetchModules = async () => {
       if (!selectedDepartment) {
         setModules([]);
+        // --- MODIFICATION: Clear subtopics when department changes ---
+        setSubtopics([]);
         return;
       }
       const { data, error } = await supabase.from('modules').select('id, name').eq('department_id', selectedDepartment).order('name');
@@ -47,8 +55,23 @@ const LearnTodayPage = () => {
     fetchModules();
   }, [selectedDepartment]);
 
-  // --- SUBMISSION LOGIC (Unchanged) ---
+  // --- NEW: Fetch Subtopics when a module is selected ---
+  useEffect(() => {
+    const fetchSubtopics = async () => {
+        if (!selectedModule) {
+            setSubtopics([]);
+            return;
+        }
+        // Assuming 'user_id' is also on subtopics for RLS, but we filter by module directly
+        const { data, error } = await supabase.from('subtopics').select('id, name').eq('module_id', selectedModule).order('name');
+        if (error) console.error('Error fetching subtopics:', error.message);
+        else setSubtopics(data);
+    };
+    fetchSubtopics();
+  }, [selectedModule]);
 
+
+  // --- SUBMISSION LOGIC ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!profile) {
@@ -65,13 +88,25 @@ const LearnTodayPage = () => {
         departmentId = newDeptData.id;
       }
       if (!departmentId) throw new Error('A department must be selected or created.');
+
       let moduleId = selectedModule;
       if (newModule.trim()) {
-        const { data: newModData, error: newModError } = await supabase.from('modules').insert({ name: newModule.trim(), department_id: departmentId }).select().single();
+        // --- MODIFICATION: Must include user_id when creating a module ---
+        const { data: newModData, error: newModError } = await supabase.from('modules').insert({ name: newModule.trim(), department_id: departmentId, user_id: profile.id }).select().single();
         if (newModError) throw newModError;
         moduleId = newModData.id;
       }
       if (!moduleId) throw new Error('A module must be selected or created.');
+
+      // --- NEW: Handle Subtopic creation ---
+      let subtopicId = selectedSubtopic;
+      if (newSubtopic.trim()) {
+        const { data: newSubData, error: newSubError } = await supabase.from('subtopics').insert({ name: newSubtopic.trim(), module_id: moduleId, user_id: profile.id }).select().single();
+        if (newSubError) throw newSubError;
+        subtopicId = newSubData.id;
+      }
+      // Note: subtopicId can be null, which is fine.
+
       let imageUrl = null;
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop();
@@ -81,13 +116,26 @@ const LearnTodayPage = () => {
         const { data: urlData } = supabase.storage.from('learning-images').getPublicUrl(fileName);
         imageUrl = urlData.publicUrl;
       }
-      const { error: logError } = await supabase.from('learning_logs').insert({ text: text.trim(), user_id: profile.id, department_id: departmentId, module_id: moduleId, image_url: imageUrl });
+
+      // --- MODIFICATION: Add subtopic_id to the insert object ---
+      const { error: logError } = await supabase.from('learning_logs').insert({ 
+        text: text.trim(), 
+        user_id: profile.id, 
+        department_id: departmentId, 
+        module_id: moduleId, 
+        // Add the subtopic_id. If none is chosen, this will be null, which is correct.
+        subtopic_id: subtopicId || null, 
+        image_url: imageUrl 
+      });
+
       if (logError) throw logError;
+
       setStatus('Learning entry submitted successfully!');
       setText('');
       setImageFile(null);
-      handleClearDepartment();
-      fetchDepartments();
+      handleClearDepartment(); // This will clear everything down the chain
+      fetchDepartments(); // Refetch departments to show new ones
+
     } catch (error) {
       console.error('Submission Error:', error.message);
       setStatus(`Error: ${error.message}`);
@@ -96,22 +144,34 @@ const LearnTodayPage = () => {
     }
   };
 
-  // --- CLEAR HANDLERS (Unchanged) ---
-
+  // --- CLEAR HANDLERS ---
   const handleClearDepartment = () => {
     setSelectedDepartment('');
     setNewDepartment('');
     setSelectedModule('');
     setNewModule('');
+    // --- MODIFICATION: Clear subtopic state as well ---
+    setSelectedSubtopic('');
+    setNewSubtopic('');
     setModules([]);
+    setSubtopics([]);
   };
 
   const handleClearModule = () => {
     setSelectedModule('');
     setNewModule('');
+    // --- MODIFICATION: Clear subtopic state as well ---
+    setSelectedSubtopic('');
+    setNewSubtopic('');
+    setSubtopics([]);
   };
 
-  // --- FINAL JSX WITH CORRECTED LOGIC ---
+  // --- NEW: Clear handler for Subtopic ---
+  const handleClearSubtopic = () => {
+    setSelectedSubtopic('');
+    setNewSubtopic('');
+  };
+
 
   return (
     <div className="p-6 max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md">
@@ -154,6 +214,33 @@ const LearnTodayPage = () => {
             placeholder="Or, create a new module"
             // FIX IS HERE: The module section is enabled if EITHER a department is selected OR a new one is being typed.
             disabled={loading || !(selectedDepartment || newDepartment.trim()) || !!selectedModule}
+            className="w-full p-3 border rounded-md mt-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400 disabled:opacity-50"
+          />
+        </div>
+
+         {/* --- NEW: Subtopic Selection --- */}
+        <div className="space-y-2">
+           <div className="flex justify-between items-center">
+            <label className="text-lg font-semibold text-gray-700 dark:text-gray-200">Subtopic (Optional)</label>
+            {(selectedSubtopic || newSubtopic.trim()) && (<button type="button" onClick={handleClearSubtopic} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline">Clear</button>)}
+          </div>
+          <select
+            value={selectedSubtopic}
+            onChange={(e) => setSelectedSubtopic(e.target.value)}
+            // Enable only when a module is selected or being created
+            disabled={loading || !(selectedModule || newModule.trim()) || !!newSubtopic.trim()}
+            className="w-full p-3 border rounded-md bg-gray-50 dark:bg-gray-700 dark:text-white dark:border-gray-600 disabled:opacity-50"
+          >
+            <option value="" disabled>Select a Subtopic</option>
+            {subtopics.map((sub) => (<option key={sub.id} value={sub.id}>{sub.name}</option>))}
+          </select>
+           <input
+            type="text"
+            value={newSubtopic}
+            onChange={(e) => setNewSubtopic(e.target.value)}
+            placeholder="Or, create a new subtopic"
+            // Enable only when a module is selected or being created
+            disabled={loading || !(selectedModule || newModule.trim()) || !!selectedSubtopic}
             className="w-full p-3 border rounded-md mt-2 dark:bg-gray-700 dark:text-white dark:border-gray-600 dark:placeholder-gray-400 disabled:opacity-50"
           />
         </div>

@@ -27,7 +27,8 @@ const SpecimenQuizPage = () => {
       setIsLoading(true);
       const { data, error } = await supabase
         .from('learning_logs')
-        .select('id, text, image_url, department:departments(name), module:modules(name)')
+        // Add subtopics to the select query
+        .select('id, text, image_url, department:departments(name), module:modules(name), subtopic:subtopics(name)')
         .not('image_url', 'is', null);
 
       if (error) {

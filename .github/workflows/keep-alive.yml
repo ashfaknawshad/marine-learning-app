@@ -9,6 +9,7 @@ on:
     # You can customize this. For example, '0 0 */5 * *' runs every 5 days.
     # The default is safe and well within the 7-day limit.
     - cron: '0 0 */5 * *'
+  workflow_dispatch: {}
 
 jobs:
   ping-supabase:

@@ -138,6 +138,6 @@ This project is licensed under the MIT License.
 
 This application was designed and developed by **Ashfak Nawshad**.
 
-- **GitHub**: [@ashfaknawshad](https://github.com/ashfaknawshad)
-- **LinkedIn**: [Your Profile URL](https://www.linkedin.com/in/ashfaknawshad/)
-- **Portfolio**: [your-portfolio.com](https://your-portfolio.com)
+- **GitHub**: [https://github.com/ashfaknawshad](@ashfaknawshad)
+- **LinkedIn**: [https://www.linkedin.com/in/ashfaknawshad/](@ashfaknawshad)
+- **Portfolio**: [https://ashfak-portfolio-ivory.vercel.app/](Visit)

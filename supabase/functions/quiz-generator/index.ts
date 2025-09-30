@@ -36,7 +36,7 @@ serve(async (req) => {
 
     // Gemini API endpoint and key
     const API_KEY = Deno.env.get('GEMINI_API_KEY');
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
     
     // Structure the request body for the Gemini API
     const requestBody = {

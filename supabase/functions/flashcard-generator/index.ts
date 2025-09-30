@@ -13,6 +13,7 @@ const FLASHCARD_PROMPT = `
 
   Here is the learning content:
 `
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -25,9 +26,10 @@ serve(async (req) => {
       throw new Error('No text provided.');
     }
     
-    // Gemini API endpoint and key
+    // Gemini API endpoint with correct model name
     const API_KEY = Deno.env.get('GEMINI_API_KEY');
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+    // Changed from gemini-1.5-flash to gemini-pro
+    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
 
     // Structure the request body for the Gemini API
     const requestBody = {
@@ -37,8 +39,10 @@ serve(async (req) => {
         }]
       }],
       generationConfig: {
-        response_mime_type: "application/json", // Instruct Gemini to output JSON
-        temperature: 0.5,
+        temperature: 0.7,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1024,
       }
     };
 
@@ -58,7 +62,14 @@ serve(async (req) => {
 
     // Extract and parse the response text from Gemini's structure
     const aiResponseText = data.candidates[0].content.parts[0].text;
-    const flashcards = JSON.parse(aiResponseText);
+    
+    // Clean the response to ensure it's valid JSON
+    let cleanedText = aiResponseText.trim();
+    if (cleanedText.startsWith('```json')) {
+      cleanedText = cleanedText.replace(/```json\n?/, '').replace(/\n?```$/, '');
+    }
+    
+    const flashcards = JSON.parse(cleanedText);
 
     return new Response(JSON.stringify({ flashcards }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

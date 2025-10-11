@@ -5,10 +5,8 @@ name: Supabase Keep-Alive
 # This workflow will run on a schedule.
 on:
   schedule:
-    # Runs at 00:00 UTC every 5th day of the month.
-    # You can customize this. For example, '0 0 */5 * *' runs every 5 days.
-    # The default is safe and well within the 7-day limit.
-    - cron: '0 0 */5 * *'
+    # Runs at 00:00 UTC every day.
+    - cron: '0 0 * * *'
   workflow_dispatch: {}
 
 jobs:
